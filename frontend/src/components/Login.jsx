@@ -27,7 +27,11 @@ export default function Login() {
 
       if (response.ok) {
         login({ name: data.name, role: data.role }, data.token);
-        navigate('/dashboard');
+        if (data.role === 'SUPERVISOR') {
+          navigate('/empresa');
+        } else {
+          navigate('/operativo');
+        }
       } else {
         setError(data.message || 'Error al iniciar sesión');
       }
