@@ -62,6 +62,7 @@ function App() {
         >
           <Route index element={<OperativeDashboard />} />
           <Route path="orders" element={<AssignedWorkOrders />} />
+          <Route path="machines" element={<Machines />} />
           <Route path="scanner" element={<QrScanner />} />
           <Route path="report" element={<ReportIssue />} />
           <Route path="history" element={<History />} />

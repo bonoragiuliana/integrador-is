@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Plus, Monitor, Search, AlertCircle, QrCode, Edit2, Eye } from 'lucide-react';
+import { Plus, Monitor, Search, AlertCircle, QrCode, Edit2, Eye, Wrench } from 'lucide-react';
 import MachineModal from '../components/MachineModal';
 import MachineDetailsModal from '../components/MachineDetailsModal';
+import { useAuthStore } from '../store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 export default function Machines() {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [machines, setMachines] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState(null);
@@ -54,6 +59,11 @@ export default function Machines() {
     }
   };
 
+  const filteredMachines = machines.filter(m => 
+    (m.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (m.sector || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -61,13 +71,15 @@ export default function Machines() {
           <h1 className="text-2xl font-bold text-gray-900">Máquinas y Equipos</h1>
           <p className="text-gray-500 text-sm mt-1">Inventario centralizado de activos y generación de QRs.</p>
         </div>
-        <button 
-          onClick={() => { setSelectedMachine(null); setIsModalOpen(true); }}
-          className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Registrar Máquina
-        </button>
+        {user?.role === 'SUPERVISOR' && (
+          <button 
+            onClick={() => { setSelectedMachine(null); setIsModalOpen(true); }}
+            className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Registrar Máquina
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -76,8 +88,10 @@ export default function Machines() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Buscar por nombre, sector o código QR..." 
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              placeholder="Buscar por nombre o sector..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
             />
           </div>
         </div>
@@ -102,20 +116,20 @@ export default function Machines() {
                     Cargando máquinas...
                   </td>
                 </tr>
-              ) : machines.length === 0 ? (
+              ) : filteredMachines.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                        <Monitor className="w-8 h-8 text-gray-400" />
+                        <Search className="w-8 h-8 text-gray-400" />
                       </div>
-                      <p className="text-gray-500 font-medium">No hay máquinas registradas</p>
-                      <p className="text-gray-400 text-sm mt-1">Hacé clic en "Registrar Máquina" para comenzar</p>
+                      <p className="text-gray-500 font-medium text-lg">No se encontraron máquinas con ese criterio</p>
+                      <p className="text-gray-400 text-sm mt-1">Intentá buscar con otro nombre o sector</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                machines.map((m) => (
+                filteredMachines.map((m) => (
                   <tr 
                     key={m.id} 
                     onClick={() => { setSelectedMachine(m); setIsDetailsOpen(true); }}
@@ -153,13 +167,24 @@ export default function Machines() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setSelectedMachine(m); setIsModalOpen(true); }}
-                          className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="Editar máquina"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                        {user?.role === 'SUPERVISOR' && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSelectedMachine(m); setIsModalOpen(true); }}
+                            className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            title="Editar máquina"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        {user?.role === 'TECNICO' && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); navigate('/operativo/mantenimiento', { state: { machineId: m.id } }); }}
+                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            title="Registrar mantenimiento"
+                          >
+                            <Wrench className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

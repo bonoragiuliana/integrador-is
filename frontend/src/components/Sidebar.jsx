@@ -24,6 +24,7 @@ export default function Sidebar() {
       return [
         { to: '/operativo', icon: <Home className="w-5 h-5" />, label: 'Inicio', exact: true },
         { to: '/operativo/orders', icon: <ClipboardList className="w-5 h-5" />, label: 'Mis Órdenes' },
+        { to: '/operativo/machines', icon: <Monitor className="w-5 h-5" />, label: 'Máquinas' },
         { to: '/operativo/scanner', icon: <QrCode className="w-5 h-5" />, label: 'Escanear QR' },
       ];
     }
