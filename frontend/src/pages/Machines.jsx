@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Monitor, Search, AlertCircle, QrCode, Edit2 } from 'lucide-react';
+import { Plus, Monitor, Search, AlertCircle, QrCode, Edit2, Eye } from 'lucide-react';
 import MachineModal from '../components/MachineModal';
+import MachineDetailsModal from '../components/MachineDetailsModal';
 
 export default function Machines() {
   const [machines, setMachines] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -13,7 +15,10 @@ export default function Machines() {
       const response = await fetch('http://localhost:3000/api/machines');
       if (response.ok) {
         const data = await response.json();
-        setMachines(data);
+        // Ordenar: FALLA primero, luego el resto
+        const sortOrder = { 'FALLA': 1, 'MANTENIMIENTO': 2, 'OPERATIVA': 3, 'INACTIVA': 4 };
+        const sortedData = data.sort((a, b) => (sortOrder[a.status] || 5) - (sortOrder[b.status] || 5));
+        setMachines(sortedData);
       }
     } catch (error) {
       console.error('Error fetching machines:', error);
@@ -85,6 +90,7 @@ export default function Machines() {
                 <th className="px-6 py-4">Sector</th>
                 <th className="px-6 py-4">Estado</th>
                 <th className="px-6 py-4">Riesgo</th>
+                <th className="px-6 py-4">Próximo Mant.</th>
                 <th className="px-6 py-4">Código QR</th>
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
@@ -92,13 +98,13 @@ export default function Machines() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
                     Cargando máquinas...
                   </td>
                 </tr>
               ) : machines.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center">
+                  <td colSpan="7" className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                         <Monitor className="w-8 h-8 text-gray-400" />
@@ -110,7 +116,11 @@ export default function Machines() {
                 </tr>
               ) : (
                 machines.map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr 
+                    key={m.id} 
+                    onClick={() => { setSelectedMachine(m); setIsDetailsOpen(true); }}
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                  >
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{m.name}</div>
                     </td>
@@ -125,6 +135,9 @@ export default function Machines() {
                         {m.risk}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-gray-500 text-sm">
+                      {m.next_maintenance ? new Date(m.next_maintenance).toLocaleDateString('es-AR') : '-'}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-gray-500 font-mono text-xs bg-gray-100 px-3 py-1.5 rounded-lg w-fit">
                         <QrCode className="w-3.5 h-3.5" />
@@ -132,13 +145,22 @@ export default function Machines() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => { setSelectedMachine(m); setIsModalOpen(true); }}
-                        className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                        title="Editar máquina"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setSelectedMachine(m); setIsDetailsOpen(true); }}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Ver detalles"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setSelectedMachine(m); setIsModalOpen(true); }}
+                          className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                          title="Editar máquina"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -153,6 +175,14 @@ export default function Machines() {
           machine={selectedMachine}
           onClose={() => setIsModalOpen(false)} 
           onSave={handleSave} 
+        />
+      )}
+
+      {isDetailsOpen && (
+        <MachineDetailsModal 
+          machine={selectedMachine}
+          onClose={() => setIsDetailsOpen(false)}
+          onEdit={() => { setIsDetailsOpen(false); setIsModalOpen(true); }}
         />
       )}
     </div>
