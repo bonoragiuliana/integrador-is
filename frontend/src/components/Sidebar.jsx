@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Home, Users, QrCode, Monitor, ClipboardList, AlertTriangle, History, ShieldAlert } from 'lucide-react';
+import { Home, Users, QrCode, Monitor, ClipboardList, AlertTriangle, History, ShieldAlert, Activity } from 'lucide-react';
 
 export default function Sidebar() {
   const { user } = useAuthStore();
@@ -15,6 +15,7 @@ export default function Sidebar() {
         { to: '/empresa/machines', icon: <Monitor className="w-5 h-5" />, label: 'Máquinas' },
         { to: '/empresa/orders', icon: <ClipboardList className="w-5 h-5" />, label: 'Órdenes de Trabajo' },
         { to: '/empresa/history', icon: <History className="w-5 h-5" />, label: 'Historial' },
+        { to: '/empresa/indicadores', icon: <Activity className="w-5 h-5" />, label: 'Indicadores' },
         { to: '/empresa/users', icon: <Users className="w-5 h-5" />, label: 'Usuarios' },
       ];
     }

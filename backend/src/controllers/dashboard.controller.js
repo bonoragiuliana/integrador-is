@@ -118,3 +118,84 @@ exports.getPendingInterventions = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getFailureMetrics = async (req, res) => {
+  try {
+    // Buscar todo el historial de mantenimientos para procesar
+    const { data: history, error } = await supabase
+      .from('maintenance_history')
+      .select(`
+        id,
+        type,
+        date,
+        machine:machines(id, name, sector),
+        user:users(id, name)
+      `);
+
+    if (error) throw error;
+    if (!history) return res.json({ topMachines: [], topSectors: [], topTechnicians: [], monthlyTrend: [] });
+
+    // 1. Máquinas con más fallas (CORRECTIVOS)
+    const faultMachinesMap = {};
+    // 2. Fallas por Sector (CORRECTIVOS)
+    const sectorMap = {};
+    // 3. Técnico con más intervenciones (TODOS)
+    const techMap = {};
+    
+    // 4. Tendencia Mensual (últimos 6 meses)
+    const today = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      months.push({ 
+        key, 
+        label: d.toLocaleDateString('es-AR', { month: 'short' }),
+        count: 0 
+      });
+    }
+
+    history.forEach(record => {
+      // Rankings Técnicos
+      if (record.user) {
+        if (!techMap[record.user.id]) techMap[record.user.id] = { name: record.user.name, count: 0 };
+        techMap[record.user.id].count++;
+      }
+
+      // Rankings Correctivos (Fallas)
+      if (record.type === 'CORRECTIVO' && record.machine) {
+        // Máquinas
+        if (!faultMachinesMap[record.machine.id]) {
+          faultMachinesMap[record.machine.id] = { name: record.machine.name, sector: record.machine.sector, count: 0 };
+        }
+        faultMachinesMap[record.machine.id].count++;
+
+        // Sectores
+        const sector = record.machine.sector || 'Sin Sector';
+        if (!sectorMap[sector]) sectorMap[sector] = 0;
+        sectorMap[sector]++;
+      }
+
+      // Tendencia Mensual
+      const recordDate = new Date(record.date);
+      const recordKey = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}`;
+      const monthBucket = months.find(m => m.key === recordKey);
+      if (monthBucket) {
+        monthBucket.count++;
+      }
+    });
+
+    const topMachines = Object.values(faultMachinesMap).sort((a, b) => b.count - a.count).slice(0, 5);
+    const topSectors = Object.entries(sectorMap).map(([sector, count]) => ({ sector, count })).sort((a, b) => b.count - a.count);
+    const topTechnicians = Object.values(techMap).sort((a, b) => b.count - a.count);
+
+    res.json({
+      topMachines,
+      topSectors,
+      topTechnicians,
+      monthlyTrend: months
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
