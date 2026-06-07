@@ -13,6 +13,7 @@ export default function Sidebar() {
         { to: '/empresa', icon: <Home className="w-5 h-5" />, label: 'Dashboard', exact: true },
         { to: '/empresa/machines', icon: <Monitor className="w-5 h-5" />, label: 'Máquinas' },
         { to: '/empresa/orders', icon: <ClipboardList className="w-5 h-5" />, label: 'Órdenes de Trabajo' },
+        { to: '/empresa/history', icon: <History className="w-5 h-5" />, label: 'Historial' },
         { to: '/empresa/users', icon: <Users className="w-5 h-5" />, label: 'Usuarios' },
       ];
     }

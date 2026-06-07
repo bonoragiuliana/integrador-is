@@ -6,6 +6,7 @@ import DashboardLayout from './components/DashboardLayout';
 import Users from './pages/Users';
 import Machines from './pages/Machines';
 import WorkOrders from './pages/WorkOrders';
+import MaintenanceHistory from './pages/MaintenanceHistory';
 import QrScanner from './pages/QrScanner';
 import ReportIssue from './pages/ReportIssue';
 import History from './pages/History';
@@ -42,6 +43,7 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="machines" element={<Machines />} />
           <Route path="orders" element={<WorkOrders />} />
+          <Route path="history" element={<MaintenanceHistory />} />
         </Route>
 
         {/* Panel Operativo - Tecnicos, Inspectores, Operarios */}

@@ -36,3 +36,22 @@ exports.create = async (req, res) => {
 
   res.status(201).json(maintenanceData[0]);
 };
+
+exports.getAll = async (req, res) => {
+  const { data, error } = await supabase
+    .from('maintenance_history')
+    .select(`
+      *,
+      machine:machines (name, sector),
+      user:users (name)
+    `)
+    .order('is_validated', { ascending: true }) // false (pendientes) primero
+    .order('date', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json(data);
+};
+
