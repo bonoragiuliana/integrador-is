@@ -93,7 +93,7 @@ exports.getPendingInterventions = async (req, res) => {
     const { data: pendingValidation } = await supabase
       .from('maintenance_history')
       .select('*, machine:machines(name), user:users(name)')
-      .eq('is_validated', false)
+      .eq('validation_status', 'PENDIENTE')
       .order('date', { ascending: false });
 
     // 2. Máquinas Vencidas (sin importar el día exacto, solo < hoy)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Clock, ShieldAlert, X, CheckCircle2, Calendar, User, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Clock, ShieldAlert, X, CheckCircle2, Calendar, User, CheckCircle, XCircle } from 'lucide-react';
 
 export default function PendingInterventions() {
   const [data, setData] = useState({ pendingValidation: [], overdueMachines: [] });
@@ -7,6 +7,8 @@ export default function PendingInterventions() {
   const [error, setError] = useState('');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [validatingId, setValidatingId] = useState(null);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
     fetchInterventions();
@@ -26,11 +28,15 @@ export default function PendingInterventions() {
     }
   };
 
-  const handleValidate = async (id) => {
+  const handleValidate = async (id, action = 'VALIDAR', reason = null) => {
     setValidatingId(id);
     try {
       const response = await fetch(`http://localhost:3000/api/maintenance/${id}/validate`, {
-        method: 'PATCH'
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action, reason })
       });
       if (!response.ok) throw new Error('Error al validar mantenimiento');
       
@@ -40,6 +46,8 @@ export default function PendingInterventions() {
         pendingValidation: prev.pendingValidation.filter(item => item.id !== id)
       }));
       setSelectedRecord(null);
+      setIsRejecting(false);
+      setRejectionReason('');
     } catch (err) {
       alert(err.message);
     } finally {
@@ -206,7 +214,11 @@ export default function PendingInterventions() {
                 <h2 className="text-xl font-black text-gray-900 leading-tight">{selectedRecord.machine?.name}</h2>
               </div>
               <button 
-                onClick={() => setSelectedRecord(null)} 
+                onClick={() => {
+                  setSelectedRecord(null);
+                  setIsRejecting(false);
+                  setRejectionReason('');
+                }} 
                 className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -214,6 +226,24 @@ export default function PendingInterventions() {
             </div>
             
             <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              
+              {selectedRecord.checklist_completed && selectedRecord.checklist_completed.length > 0 && (
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-4">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Checklist Completado</p>
+                  <ul className="space-y-2">
+                    {selectedRecord.checklist_completed.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 font-medium">
+                        <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                        <span>{item.task}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-4 pt-3 border-t border-gray-200 flex items-center gap-2 text-green-700 font-bold text-sm">
+                    <input type="checkbox" checked readOnly className="w-4 h-4 text-green-500 rounded focus:ring-green-500" />
+                    Firma electrónica del técnico
+                  </div>
+                </div>
+              )}
               <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Descripción del Trabajo</p>
                 <p className="text-gray-900 font-medium whitespace-pre-wrap">
@@ -238,20 +268,62 @@ export default function PendingInterventions() {
               </div>
             </div>
 
-            <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3">
-              <button 
-                onClick={() => handleValidate(selectedRecord.id)}
-                disabled={validatingId === selectedRecord.id}
-                className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm active:scale-95"
-              >
-                {validatingId === selectedRecord.id ? (
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5" /> Validar y Cerrar
-                  </>
-                )}
-              </button>
+            <div className="p-5 border-t border-gray-100 bg-gray-50">
+              {!isRejecting ? (
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setIsRejecting(true)}
+                    disabled={validatingId === selectedRecord.id}
+                    className="px-6 py-3 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <XCircle className="w-5 h-5" /> Rechazar
+                  </button>
+                  <button 
+                    onClick={() => handleValidate(selectedRecord.id, 'VALIDAR')}
+                    disabled={validatingId === selectedRecord.id}
+                    className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                  >
+                    {validatingId === selectedRecord.id ? (
+                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" /> Validar y Aprobar
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Motivo de Rechazo</label>
+                    <textarea
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Explicá qué faltó o por qué no aprobás esta intervención..."
+                      className="w-full p-3 bg-white border border-red-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none min-h-[100px] text-gray-900"
+                    ></textarea>
+                  </div>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setIsRejecting(false)}
+                      className="px-6 py-3 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold rounded-xl transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={() => handleValidate(selectedRecord.id, 'RECHAZAR', rejectionReason)}
+                      disabled={!rejectionReason.trim() || validatingId === selectedRecord.id}
+                      className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {validatingId === selectedRecord.id ? (
+                        <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      ) : (
+                        'Confirmar Rechazo'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

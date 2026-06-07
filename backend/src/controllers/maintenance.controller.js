@@ -58,9 +58,29 @@ exports.getAll = async (req, res) => {
 
 exports.validate = async (req, res) => {
   const { id } = req.params;
+  const { action, reason } = req.body;
+
+  let updatePayload = {};
+  if (action === 'VALIDAR') {
+    updatePayload = { 
+      is_validated: true, 
+      validation_status: 'VALIDADO', 
+      rejection_reason: null 
+    };
+  } else if (action === 'RECHAZAR') {
+    if (!reason) return res.status(400).json({ message: 'El motivo de rechazo es obligatorio' });
+    updatePayload = { 
+      is_validated: false, 
+      validation_status: 'RECHAZADO', 
+      rejection_reason: reason 
+    };
+  } else {
+    return res.status(400).json({ message: 'Acción no válida' });
+  }
+
   const { data, error } = await supabase
     .from('maintenance_history')
-    .update({ is_validated: true })
+    .update(updatePayload)
     .eq('id', id)
     .select();
 
