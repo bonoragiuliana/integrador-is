@@ -86,3 +86,35 @@ exports.getSupervisorMetrics = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getPendingInterventions = async (req, res) => {
+  try {
+    // 1. Mantenimientos Pendientes de Validación
+    const { data: pendingValidation } = await supabase
+      .from('maintenance_history')
+      .select('*, machine:machines(name), user:users(name)')
+      .eq('is_validated', false)
+      .order('date', { ascending: false });
+
+    // 2. Máquinas Vencidas (sin importar el día exacto, solo < hoy)
+    const todayIso = new Date().toISOString().split('T')[0];
+    const { data: overdueMachines } = await supabase
+      .from('machines')
+      .select('id, name, sector, next_maintenance, risk')
+      .not('next_maintenance', 'is', null)
+      .lt('next_maintenance', todayIso);
+      
+    // Ordenar por riesgo (ALTO primero)
+    const riskWeight = { 'ALTO': 3, 'MEDIO': 2, 'BAJO': 1 };
+    const sortedOverdue = (overdueMachines || []).sort((a, b) => {
+      return (riskWeight[b.risk] || 0) - (riskWeight[a.risk] || 0);
+    });
+
+    res.json({
+      pendingValidation: pendingValidation || [],
+      overdueMachines: sortedOverdue
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Home, Users, QrCode, Monitor, ClipboardList, AlertTriangle, History } from 'lucide-react';
+import { Home, Users, QrCode, Monitor, ClipboardList, AlertTriangle, History, ShieldAlert } from 'lucide-react';
 
 export default function Sidebar() {
   const { user } = useAuthStore();
@@ -11,6 +11,7 @@ export default function Sidebar() {
     if (role === 'SUPERVISOR') {
       return [
         { to: '/empresa', icon: <Home className="w-5 h-5" />, label: 'Dashboard', exact: true },
+        { to: '/empresa/interventions', icon: <ShieldAlert className="w-5 h-5" />, label: 'Urgencias' },
         { to: '/empresa/machines', icon: <Monitor className="w-5 h-5" />, label: 'Máquinas' },
         { to: '/empresa/orders', icon: <ClipboardList className="w-5 h-5" />, label: 'Órdenes de Trabajo' },
         { to: '/empresa/history', icon: <History className="w-5 h-5" />, label: 'Historial' },

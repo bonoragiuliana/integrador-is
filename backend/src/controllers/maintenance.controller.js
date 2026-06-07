@@ -56,3 +56,18 @@ exports.getAll = async (req, res) => {
   res.json(data);
 };
 
+exports.validate = async (req, res) => {
+  const { id } = req.params;
+  const { data, error } = await supabase
+    .from('maintenance_history')
+    .update({ is_validated: true })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json(data[0]);
+};
+

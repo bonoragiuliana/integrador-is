@@ -7,6 +7,7 @@ import Users from './pages/Users';
 import Machines from './pages/Machines';
 import WorkOrders from './pages/WorkOrders';
 import MaintenanceHistory from './pages/MaintenanceHistory';
+import PendingInterventions from './pages/PendingInterventions';
 import QrScanner from './pages/QrScanner';
 import ReportIssue from './pages/ReportIssue';
 import History from './pages/History';
@@ -45,6 +46,7 @@ function App() {
           <Route path="machines" element={<Machines />} />
           <Route path="orders" element={<WorkOrders />} />
           <Route path="history" element={<MaintenanceHistory />} />
+          <Route path="interventions" element={<PendingInterventions />} />
         </Route>
 
         {/* Panel Operativo - Tecnicos, Inspectores, Operarios */}
