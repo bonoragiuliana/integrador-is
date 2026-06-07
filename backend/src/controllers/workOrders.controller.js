@@ -69,8 +69,8 @@ exports.updateStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  // Aceptamos EN_PROCESO como estándar nuevo
-  if (!['PENDIENTE', 'EN_PROCESO', 'COMPLETADA'].includes(status)) {
+  // Aceptamos EN_PROCESO y VALIDADA como estándares
+  if (!['PENDIENTE', 'EN_PROCESO', 'COMPLETADA', 'VALIDADA'].includes(status)) {
     return res.status(400).json({ message: 'Estado inválido' });
   }
 
@@ -86,8 +86,11 @@ exports.updateStatus = async (req, res) => {
   const currentStatus = currentData.status;
   
   // Validar dirección (no volver atrás)
-  if (currentStatus === 'COMPLETADA') {
-    return res.status(400).json({ message: 'La orden ya está completada y no puede modificarse' });
+  if (currentStatus === 'VALIDADA') {
+    return res.status(400).json({ message: 'La orden ya fue validada y está cerrada permanentemente' });
+  }
+  if (currentStatus === 'COMPLETADA' && status !== 'VALIDADA') {
+    return res.status(400).json({ message: 'Una orden completada solo puede ser validada' });
   }
   if (currentStatus === 'EN_PROCESO' && status === 'PENDIENTE') {
     return res.status(400).json({ message: 'No se puede volver a PENDIENTE una orden EN_PROCESO' });
