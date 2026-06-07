@@ -15,6 +15,7 @@ import OperativeDashboard from './pages/OperativeDashboard';
 import RegisterMaintenance from './pages/RegisterMaintenance';
 import AssignedWorkOrders from './pages/AssignedWorkOrders';
 import Metrics from './pages/Metrics';
+import Statistics from './pages/Statistics';
 
 function PrivateRoute({ children, allowedRoles }) {
   const { isAuthenticated, user } = useAuthStore();
@@ -49,6 +50,7 @@ function App() {
           <Route path="history" element={<MaintenanceHistory />} />
           <Route path="interventions" element={<PendingInterventions />} />
           <Route path="indicadores" element={<Metrics />} />
+          <Route path="estadisticas" element={<Statistics />} />
         </Route>
 
         {/* Panel Operativo - Tecnicos, Inspectores, Operarios */}

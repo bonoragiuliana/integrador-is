@@ -199,3 +199,98 @@ exports.getFailureMetrics = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getStatistics = async (req, res) => {
+  try {
+    // 1. Historial de Mantenimiento
+    const { data: history } = await supabase.from('maintenance_history').select('type, date, is_validated');
+    
+    let totalMaintenances = 0;
+    let validatedCount = 0;
+    const typesCount = { PREVENTIVO: 0, CORRECTIVO: 0, INSPECCION: 0 };
+    
+    // Tendencia Mensual (6 meses)
+    const today = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      months.push({ 
+        key, 
+        label: d.toLocaleDateString('es-AR', { month: 'short' }),
+        count: 0 
+      });
+    }
+
+    if (history) {
+      totalMaintenances = history.length;
+      history.forEach(m => {
+        if (m.is_validated) validatedCount++;
+        if (typesCount[m.type] !== undefined) typesCount[m.type]++;
+        
+        const mDate = new Date(m.date);
+        const mKey = `${mDate.getFullYear()}-${String(mDate.getMonth() + 1).padStart(2, '0')}`;
+        const monthBucket = months.find(b => b.key === mKey);
+        if (monthBucket) monthBucket.count++;
+      });
+    }
+    const validationPercentage = totalMaintenances > 0 ? Math.round((validatedCount / totalMaintenances) * 100) : 0;
+
+    // 2. Estado de Máquinas
+    const { data: machines } = await supabase.from('machines').select('status');
+    const machineStates = { OPERATIVA: 0, FALLA: 0, MANTENIMIENTO: 0, INACTIVA: 0 };
+    if (machines) {
+      machines.forEach(m => {
+        if (machineStates[m.status] !== undefined) machineStates[m.status]++;
+      });
+    }
+
+    // 3. Órdenes de Trabajo
+    const { data: orders } = await supabase.from('work_orders').select('status, started_at, completed_at');
+    let totalOrders = 0;
+    let pendingOrders = 0;
+    let completedOrders = 0;
+    let totalResolutionTimeMs = 0;
+    let resolutionCount = 0;
+
+    if (orders) {
+      totalOrders = orders.length;
+      orders.forEach(o => {
+        if (o.status === 'PENDIENTE') pendingOrders++;
+        if (o.status === 'COMPLETADA' || o.status === 'VALIDADA') completedOrders++;
+        
+        if (o.started_at && o.completed_at) {
+          const start = new Date(o.started_at).getTime();
+          const end = new Date(o.completed_at).getTime();
+          if (end > start) {
+            totalResolutionTimeMs += (end - start);
+            resolutionCount++;
+          }
+        }
+      });
+    }
+
+    const avgResolutionTimeHours = resolutionCount > 0 
+      ? Math.round(totalResolutionTimeMs / resolutionCount / (1000 * 60 * 60)) 
+      : 0;
+
+    res.json({
+      summary: {
+        total: totalMaintenances,
+        types: typesCount,
+        validationPercentage
+      },
+      machines: machineStates,
+      monthlyTrend: months,
+      orders: {
+        total: totalOrders,
+        completed: completedOrders,
+        pending: pendingOrders,
+        avgResolutionTimeHours
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
