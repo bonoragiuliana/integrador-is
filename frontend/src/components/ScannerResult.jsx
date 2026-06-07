@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, Activity, MapPin, Calendar, CheckCircle2, History } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 export default function ScannerResult({ machine, onRescan }) {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   if (!machine) return null;
 
@@ -70,27 +72,58 @@ export default function ScannerResult({ machine, onRescan }) {
         </div>
       </div>
 
-      {/* Historial Placeholder */}
+      {/* Historial (Detallado para Inspector o Placeholder para otros) */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-900 flex items-center gap-2">
             <History className="w-5 h-5 text-gray-400" />
-            Últimas Intervenciones
+            Historial de Intervenciones
           </h3>
         </div>
-        <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-          <p className="text-sm text-gray-500">Sin intervenciones recientes registradas.</p>
-        </div>
+        
+        {user?.role === 'INSPECTOR' ? (
+          <div className="space-y-4">
+            {/* Mock Data for Inspector */}
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <div className="flex justify-between items-start mb-2">
+                <span className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold">PREVENTIVO</span>
+                <span className="text-xs text-gray-500 font-medium">Hace 15 días</span>
+              </div>
+              <p className="text-sm text-gray-900 font-medium mb-1">Cambio de filtros y lubricación general</p>
+              <div className="flex justify-between items-end mt-3">
+                <p className="text-xs text-gray-500">Téc. Juan Pérez</p>
+                <span className="text-xs text-green-600 font-semibold">Validado</span>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <div className="flex justify-between items-start mb-2">
+                <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-xs font-bold">CORRECTIVO</span>
+                <span className="text-xs text-gray-500 font-medium">Hace 2 meses</span>
+              </div>
+              <p className="text-sm text-gray-900 font-medium mb-1">Reemplazo de motor paso a paso</p>
+              <div className="flex justify-between items-end mt-3">
+                <p className="text-xs text-gray-500">Téc. Mario Gómez</p>
+                <span className="text-xs text-green-600 font-semibold">Validado</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <p className="text-sm text-gray-500">Sin intervenciones recientes registradas.</p>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons (Massive Mobile-First) */}
       <div className="space-y-3 pt-2">
-        <button
-          onClick={() => navigate('/operativo/mantenimiento')}
-          className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-transform active:scale-95 text-lg"
-        >
-          Registrar Mantenimiento
-        </button>
+        {user?.role !== 'INSPECTOR' && (
+          <button
+            onClick={() => navigate('/operativo/mantenimiento')}
+            className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-transform active:scale-95 text-lg"
+          >
+            Registrar Mantenimiento
+          </button>
+        )}
         <button
           onClick={onRescan}
           className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-4 px-6 rounded-2xl border-2 border-gray-200 transition-colors text-lg"
