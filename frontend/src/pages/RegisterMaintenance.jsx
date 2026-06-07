@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PenTool, CheckCircle2, AlertCircle, ArrowLeft, ClipboardCheck } from 'lucide-react';
+import { PenTool, CheckCircle2, AlertCircle, ArrowLeft, ClipboardCheck, Image as ImageIcon } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const CHECKLISTS = {
@@ -39,11 +39,13 @@ export default function RegisterMaintenance() {
     date: new Date().toISOString().split('T')[0],
     description: '',
     observations: '',
+    evidence_url: '',
     final_machine_status: machine ? machine.status : 'OPERATIVA',
     isConfirmed: false
   });
 
   const [checklist, setChecklist] = useState([]);
+  const [evidenceStatus, setEvidenceStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -107,7 +109,8 @@ export default function RegisterMaintenance() {
           description: formData.description,
           observations: formData.observations,
           final_machine_status: formData.final_machine_status,
-          checklist_completed: checklist
+          checklist_completed: checklist,
+          evidence_url: evidenceStatus === 'success' ? formData.evidence_url : null
         })
       });
 
@@ -245,6 +248,59 @@ export default function RegisterMaintenance() {
               value={formData.observations}
               onChange={(e) => setFormData({...formData, observations: e.target.value})}
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+              Evidencia Fotográfica <span className="text-gray-400 font-normal lowercase">(Opcional)</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <ImageIcon className="w-5 h-5 text-gray-400" />
+              </div>
+              <input 
+                type="text"
+                className="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                placeholder="Pegá aquí la URL de la imagen de evidencia"
+                value={formData.evidence_url}
+                onChange={(e) => {
+                  setFormData({...formData, evidence_url: e.target.value});
+                  if (e.target.value) setEvidenceStatus('loading');
+                  else setEvidenceStatus('idle');
+                }}
+              />
+            </div>
+            
+            {/* Previsualizador de Imagen Oculto para validación */}
+            {formData.evidence_url && (
+              <img 
+                src={formData.evidence_url} 
+                alt="Validando evidencia"
+                className="hidden"
+                onLoad={() => setEvidenceStatus('success')}
+                onError={() => setEvidenceStatus('error')}
+              />
+            )}
+
+            {/* Mensajes y Preview Visible */}
+            {evidenceStatus === 'loading' && (
+              <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span> Verificando imagen...
+              </p>
+            )}
+            {evidenceStatus === 'error' && (
+              <p className="text-sm font-bold text-red-500 mt-2 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" /> URL de imagen no válida
+              </p>
+            )}
+            {evidenceStatus === 'success' && (
+              <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
+                <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full shadow-md">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <img src={formData.evidence_url} alt="Preview de Evidencia" className="w-full max-h-48 object-cover" />
+              </div>
+            )}
           </div>
 
           <div className="pt-6 border-t border-gray-100">

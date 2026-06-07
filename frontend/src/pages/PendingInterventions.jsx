@@ -244,6 +244,15 @@ export default function PendingInterventions() {
                   </div>
                 </div>
               )}
+
+              {selectedRecord.evidence_url && (
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Evidencia Fotográfica</p>
+                  <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                    <img src={selectedRecord.evidence_url} alt="Evidencia del mantenimiento" className="w-full max-h-64 object-cover" />
+                  </div>
+                </div>
+              )}
               <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Descripción del Trabajo</p>
                 <p className="text-gray-900 font-medium whitespace-pre-wrap">
