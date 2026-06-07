@@ -34,3 +34,24 @@ exports.create = async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
   res.status(201).json(data[0]);
 };
+
+exports.update = async (req, res) => {
+  const { id } = req.params;
+  const { name, sector, status, risk, maintenance_frequency, next_maintenance } = req.body;
+
+  if (!name || !sector) {
+    return res.status(400).json({ message: 'Nombre y sector son campos obligatorios.' });
+  }
+
+  const { data, error } = await supabase.from('machines').update({
+    name,
+    sector,
+    status,
+    risk,
+    maintenance_frequency,
+    next_maintenance: next_maintenance || null
+  }).eq('id', id).select();
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data[0]);
+};

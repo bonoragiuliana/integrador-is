@@ -29,8 +29,11 @@ export default function MachineModal({ machine, onClose, onSave }) {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/machines', {
-        method: 'POST',
+      const url = machine ? `http://localhost:3000/api/machines/${machine.id}` : 'http://localhost:3000/api/machines';
+      const method = machine ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
@@ -65,8 +68,12 @@ export default function MachineModal({ machine, onClose, onSave }) {
           {isSuccess ? (
             <div className="flex flex-col items-center justify-center text-center py-6">
               <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Máquina Guardada con Éxito</h3>
-              <p className="text-gray-500 mb-6">El código QR ya fue generado y asignado a la máquina.</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {machine ? 'Cambios Guardados' : 'Máquina Guardada con Éxito'}
+              </h3>
+              <p className="text-gray-500 mb-6">
+                {machine ? 'Los datos de la máquina fueron actualizados.' : 'El código QR ya fue generado y asignado a la máquina.'}
+              </p>
               
               <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl mb-6 shadow-sm">
                 <QRCodeSVG value={generatedQr} size={200} level="H" />
