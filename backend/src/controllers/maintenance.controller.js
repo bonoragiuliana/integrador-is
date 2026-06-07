@@ -1,0 +1,38 @@
+const supabase = require('../config/supabase');
+
+exports.create = async (req, res) => {
+  const { machine_id, user_id, type, date, description, observations, final_machine_status } = req.body;
+
+  if (!machine_id || !user_id || !type || !description || !final_machine_status) {
+    return res.status(400).json({ message: 'Campos obligatorios faltantes.' });
+  }
+
+  // Insertamos el mantenimiento
+  const { data: maintenanceData, error: maintenanceError } = await supabase.from('maintenance_history').insert([{
+    machine_id,
+    user_id,
+    type,
+    date: date || new Date().toISOString(),
+    description,
+    observations,
+    final_machine_status,
+    is_validated: false
+  }]).select();
+
+  if (maintenanceError) {
+    return res.status(500).json({ error: maintenanceError.message });
+  }
+
+  // Actualizamos el estado de la máquina en Supabase
+  const { error: machineError } = await supabase.from('machines').update({
+    status: final_machine_status
+  }).eq('id', machine_id);
+
+  if (machineError) {
+    console.error('Error actualizando el estado de la máquina:', machineError);
+    // Si falla esto devolvemos un 207 Multi-Status o 500 según diseño, opto por dejarlo pasar con log
+    // ya que la historia clínica del mantenimiento quedó asentada.
+  }
+
+  res.status(201).json(maintenanceData[0]);
+};

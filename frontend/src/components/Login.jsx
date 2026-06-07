@@ -26,7 +26,7 @@ export default function Login() {
       const data = await response.json();
 
       if (response.ok) {
-        login({ name: data.name, role: data.role }, data.token);
+        login({ id: data.id, name: data.name, role: data.role }, data.token);
         if (data.role === 'SUPERVISOR') {
           navigate('/empresa');
         } else {

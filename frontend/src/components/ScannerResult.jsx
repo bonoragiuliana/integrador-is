@@ -118,7 +118,7 @@ export default function ScannerResult({ machine, onRescan }) {
       <div className="space-y-3 pt-2">
         {user?.role !== 'INSPECTOR' && (
           <button
-            onClick={() => navigate('/operativo/mantenimiento')}
+            onClick={() => navigate('/operativo/mantenimiento', { state: { machine } })}
             className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-transform active:scale-95 text-lg"
           >
             Registrar Mantenimiento

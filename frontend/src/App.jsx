@@ -10,6 +10,7 @@ import QrScanner from './pages/QrScanner';
 import ReportIssue from './pages/ReportIssue';
 import History from './pages/History';
 import OperativeDashboard from './pages/OperativeDashboard';
+import RegisterMaintenance from './pages/RegisterMaintenance';
 
 function PrivateRoute({ children, allowedRoles }) {
   const { isAuthenticated, user } = useAuthStore();
@@ -57,6 +58,7 @@ function App() {
           <Route path="scanner" element={<QrScanner />} />
           <Route path="report" element={<ReportIssue />} />
           <Route path="history" element={<History />} />
+          <Route path="mantenimiento" element={<RegisterMaintenance />} />
         </Route>
 
         {/* Fallback general */}
