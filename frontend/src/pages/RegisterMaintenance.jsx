@@ -1,7 +1,31 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PenTool, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { PenTool, CheckCircle2, AlertCircle, ArrowLeft, ClipboardCheck } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+
+const CHECKLISTS = {
+  PREVENTIVO: [
+    'Verificar nivel de aceite',
+    'Limpiar filtros',
+    'Revisar correas y cadenas',
+    'Verificar ajuste de pernos',
+    'Probar funcionamiento general'
+  ],
+  CORRECTIVO: [
+    'Identificar causa de la falla',
+    'Reemplazar componente dañado',
+    'Verificar reparación',
+    'Probar funcionamiento',
+    'Documentar repuesto utilizado'
+  ],
+  INSPECCION: [
+    'Revisar estado general',
+    'Verificar parámetros operativos',
+    'Fotografiar componentes críticos',
+    'Registrar anomalías encontradas'
+  ]
+};
 
 export default function RegisterMaintenance() {
   const location = useLocation();
@@ -19,9 +43,25 @@ export default function RegisterMaintenance() {
     isConfirmed: false
   });
 
+  const [checklist, setChecklist] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    setChecklist([]);
+  }, [formData.type]);
+
+  const toggleChecklistItem = (item) => {
+    setChecklist(prev => 
+      prev.includes(item) 
+        ? prev.filter(i => i !== item)
+        : [...prev, item]
+    );
+  };
+
+  const currentTasks = CHECKLISTS[formData.type] || [];
+  const progressPercent = currentTasks.length > 0 ? Math.round((checklist.length / currentTasks.length) * 100) : 0;
 
   // Redirigir si alguien entra directo sin escanear maquina
   if (!machine) {
@@ -66,7 +106,8 @@ export default function RegisterMaintenance() {
           date: formData.date,
           description: formData.description,
           observations: formData.observations,
-          final_machine_status: formData.final_machine_status
+          final_machine_status: formData.final_machine_status,
+          checklist_completed: checklist
         })
       });
 
@@ -140,6 +181,60 @@ export default function RegisterMaintenance() {
               value={formData.description}
               onChange={(e) => setFormData({...formData, description: e.target.value})}
             />
+          </div>
+
+          {/* Checklist Dinámico */}
+          <div className="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-gray-200 bg-white flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">Checklist de Tareas</h3>
+              </div>
+              <span className="text-sm font-bold text-gray-500">
+                {checklist.length} de {currentTasks.length} completadas
+              </span>
+            </div>
+            {/* Progress Bar */}
+            <div className="h-1.5 w-full bg-gray-200">
+              <div 
+                className="h-full bg-primary transition-all duration-500"
+                style={{ width: `${progressPercent}%` }}
+              ></div>
+            </div>
+            <div className="p-4 sm:p-5 space-y-3">
+              {currentTasks.map((task, idx) => {
+                const isChecked = checklist.includes(task);
+                return (
+                  <label 
+                    key={idx} 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleChecklistItem(task);
+                    }}
+                    className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-colors border ${
+                      isChecked 
+                        ? 'bg-primary/5 border-primary/20 shadow-sm' 
+                        : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="shrink-0">
+                      <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${
+                        isChecked 
+                          ? 'bg-primary border-primary text-white'
+                          : 'border-gray-300 bg-white'
+                      }`}>
+                        {isChecked && <CheckCircle2 className="w-4 h-4" />}
+                      </div>
+                    </div>
+                    <span className={`text-sm sm:text-base font-semibold leading-tight ${
+                      isChecked ? 'text-primary line-through opacity-70' : 'text-gray-700'
+                    }`}>
+                      {task}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           <div>

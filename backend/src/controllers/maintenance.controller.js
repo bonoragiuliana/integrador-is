@@ -1,7 +1,7 @@
 const supabase = require('../config/supabase');
 
 exports.create = async (req, res) => {
-  const { machine_id, user_id, type, date, description, observations, final_machine_status } = req.body;
+  const { machine_id, user_id, type, date, description, observations, final_machine_status, checklist_completed } = req.body;
 
   if (!machine_id || !user_id || !type || !description || !final_machine_status) {
     return res.status(400).json({ message: 'Campos obligatorios faltantes.' });
@@ -16,6 +16,7 @@ exports.create = async (req, res) => {
     description,
     observations,
     final_machine_status,
+    checklist_completed: checklist_completed || [],
     is_validated: false
   }]).select();
 
