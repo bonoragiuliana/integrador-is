@@ -12,6 +12,7 @@ import ReportIssue from './pages/ReportIssue';
 import History from './pages/History';
 import OperativeDashboard from './pages/OperativeDashboard';
 import RegisterMaintenance from './pages/RegisterMaintenance';
+import AssignedWorkOrders from './pages/AssignedWorkOrders';
 
 function PrivateRoute({ children, allowedRoles }) {
   const { isAuthenticated, user } = useAuthStore();
@@ -56,7 +57,7 @@ function App() {
           } 
         >
           <Route index element={<OperativeDashboard />} />
-          <Route path="orders" element={<WorkOrders />} />
+          <Route path="orders" element={<AssignedWorkOrders />} />
           <Route path="scanner" element={<QrScanner />} />
           <Route path="report" element={<ReportIssue />} />
           <Route path="history" element={<History />} />

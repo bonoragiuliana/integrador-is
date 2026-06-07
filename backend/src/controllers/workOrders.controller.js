@@ -45,3 +45,43 @@ exports.getAll = async (req, res) => {
 
   res.json(data);
 };
+
+exports.getByUser = async (req, res) => {
+  const { user_id } = req.params;
+  const { data, error } = await supabase
+    .from('work_orders')
+    .select(`
+      *,
+      machine:machines (name),
+      creator:users!work_orders_created_by_fkey (name)
+    `)
+    .eq('assigned_to', user_id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json(data);
+};
+
+exports.updateStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['PENDIENTE', 'EN_PROGRESO', 'COMPLETADA'].includes(status)) {
+    return res.status(400).json({ message: 'Estado inválido' });
+  }
+
+  const { data, error } = await supabase
+    .from('work_orders')
+    .update({ status })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json(data[0]);
+};
