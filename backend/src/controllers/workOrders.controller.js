@@ -69,13 +69,40 @@ exports.updateStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!['PENDIENTE', 'EN_PROGRESO', 'COMPLETADA'].includes(status)) {
+  // Aceptamos EN_PROCESO como estándar nuevo
+  if (!['PENDIENTE', 'EN_PROCESO', 'COMPLETADA'].includes(status)) {
     return res.status(400).json({ message: 'Estado inválido' });
+  }
+
+  // Obtener estado actual para validar unidireccionalidad
+  const { data: currentData } = await supabase
+    .from('work_orders')
+    .select('status')
+    .eq('id', id)
+    .single();
+
+  if (!currentData) return res.status(404).json({ message: 'Orden no encontrada' });
+
+  const currentStatus = currentData.status;
+  
+  // Validar dirección (no volver atrás)
+  if (currentStatus === 'COMPLETADA') {
+    return res.status(400).json({ message: 'La orden ya está completada y no puede modificarse' });
+  }
+  if (currentStatus === 'EN_PROCESO' && status === 'PENDIENTE') {
+    return res.status(400).json({ message: 'No se puede volver a PENDIENTE una orden EN_PROCESO' });
+  }
+
+  let updates = { status };
+  if (status === 'EN_PROCESO' && currentStatus === 'PENDIENTE') {
+    updates.started_at = new Date().toISOString();
+  } else if (status === 'COMPLETADA') {
+    updates.completed_at = new Date().toISOString();
   }
 
   const { data, error } = await supabase
     .from('work_orders')
-    .update({ status })
+    .update(updates)
     .eq('id', id)
     .select();
 

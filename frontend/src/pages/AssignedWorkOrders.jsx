@@ -9,6 +9,7 @@ export default function AssignedWorkOrders() {
   const [error, setError] = useState('');
   
   const [updatingId, setUpdatingId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, orderId: null, nextStatus: null });
 
   useEffect(() => {
     fetchOrders();
@@ -43,16 +44,24 @@ export default function AssignedWorkOrders() {
   };
 
   const getNextStatus = (currentStatus) => {
-    if (currentStatus === 'PENDIENTE') return 'EN_PROGRESO';
-    if (currentStatus === 'EN_PROGRESO') return 'COMPLETADA';
-    return 'PENDIENTE'; // Para poder deshacer (opcional)
+    if (currentStatus === 'PENDIENTE') return 'EN_PROCESO';
+    if (currentStatus === 'EN_PROCESO') return 'COMPLETADA';
+    return null; // No hay más avance
   };
 
-  const updateStatus = async (id, currentStatus) => {
+  const handleStatusClick = (id, currentStatus) => {
     const nextStatus = getNextStatus(currentStatus);
-    setUpdatingId(id);
+    if (!nextStatus) return;
+    setConfirmModal({ isOpen: true, orderId: id, nextStatus });
+  };
+
+  const executeUpdateStatus = async () => {
+    const { orderId, nextStatus } = confirmModal;
+    setUpdatingId(orderId);
+    setConfirmModal({ isOpen: false, orderId: null, nextStatus: null });
+    
     try {
-      const response = await fetch(`http://localhost:3000/api/work-orders/${id}/status`, {
+      const response = await fetch(`http://localhost:3000/api/work-orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: nextStatus })
@@ -82,7 +91,7 @@ export default function AssignedWorkOrders() {
   const getStatusColor = (status) => {
     switch(status) {
       case 'PENDIENTE': return 'bg-gray-100 text-gray-600 border-gray-200';
-      case 'EN_PROGRESO': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'EN_PROCESO': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'COMPLETADA': return 'bg-green-100 text-green-700 border-green-200';
       default: return 'bg-gray-100 text-gray-600';
     }
@@ -90,8 +99,8 @@ export default function AssignedWorkOrders() {
 
   const getStatusButtonText = (status) => {
     if (status === 'PENDIENTE') return 'Iniciar Trabajo';
-    if (status === 'EN_PROGRESO') return 'Marcar Completada';
-    return 'Reabrir Orden';
+    if (status === 'EN_PROCESO') return 'Marcar Completada';
+    return '';
   };
 
   return (
@@ -125,11 +134,14 @@ export default function AssignedWorkOrders() {
         <div className="space-y-4">
           {orders.map(order => {
             const isCompleted = order.status === 'COMPLETADA';
+            const isInProcess = order.status === 'EN_PROCESO';
             return (
               <div 
                 key={order.id} 
                 className={`bg-white rounded-3xl shadow-sm border p-5 sm:p-6 transition-all duration-300 ${
-                  isCompleted ? 'border-green-200 opacity-60 bg-green-50/30' : 'border-gray-200 hover:border-primary/40'
+                  isCompleted ? 'border-green-200 opacity-60 bg-green-50/30' : 
+                  isInProcess ? 'border-blue-400 ring-4 ring-blue-100 shadow-blue-100 shadow-lg' : 
+                  'border-gray-200 hover:border-primary/40'
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
@@ -162,21 +174,50 @@ export default function AssignedWorkOrders() {
                     </div>
                   </div>
                   
-                  <button 
-                    onClick={() => updateStatus(order.id, order.status)}
-                    disabled={updatingId === order.id}
-                    className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold transition-transform active:scale-95 ${
-                      order.status === 'PENDIENTE' ? 'bg-primary text-white shadow-md hover:bg-primary-dark'
-                      : order.status === 'EN_PROGRESO' ? 'bg-green-500 text-white shadow-md hover:bg-green-600'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                    }`}
-                  >
-                    {updatingId === order.id ? 'Actualizando...' : getStatusButtonText(order.status)}
-                  </button>
+                  {!isCompleted && (
+                    <button 
+                      onClick={() => handleStatusClick(order.id, order.status)}
+                      disabled={updatingId === order.id}
+                      className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold transition-transform active:scale-95 ${
+                        order.status === 'PENDIENTE' ? 'bg-primary text-white shadow-md hover:bg-primary-dark'
+                        : 'bg-green-500 text-white shadow-md hover:bg-green-600'
+                      }`}
+                    >
+                      {updatingId === order.id ? 'Actualizando...' : getStatusButtonText(order.status)}
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal de Confirmación */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 overflow-hidden animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-black text-gray-900 mb-2">Confirmar Acción</h2>
+            <p className="text-gray-600 mb-8">
+              ¿Confirmás que querés cambiar el estado de la orden a <span className="font-black text-gray-900">{confirmModal.nextStatus?.replace('_', ' ')}</span>?
+              {confirmModal.nextStatus === 'EN_PROCESO' && ' Al hacerlo se registrará la hora de inicio de tu trabajo.'}
+              {confirmModal.nextStatus === 'COMPLETADA' && ' Al hacerlo cerrarás la orden y registrarás la hora de finalización. Esta acción no se puede deshacer.'}
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setConfirmModal({ isOpen: false, orderId: null, nextStatus: null })}
+                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={executeUpdateStatus}
+                className="flex-1 px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl shadow-md transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
